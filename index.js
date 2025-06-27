@@ -27,10 +27,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
+const UserSchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  credits: { type: Number, default: 0 },
+  email: { type: String },
+  subscribed: { type: Boolean, default: false },
+  subscriptionId: { type: String, default: null }, // Add this line
+});
+
+const User = mongoose.model('User', UserSchema);
+
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://rocky-falls-15188.herokuapp.com/auth/google/callback"
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
   },
   async (accessToken, refreshToken, profile, done) => {
     const email = profile.emails[0].value;
@@ -57,10 +67,7 @@ passport.deserializeUser(async (id, done) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI);
 
 // Rest of the code remains unchanged
 
@@ -187,8 +194,8 @@ app.post('/create-checkout-session', authenticate, async (req, res) => {
       },
     ],
     mode: 'subscription',
-    success_url: 'https://rocky-falls-15188.herokuapp.com/dashboard',
-    cancel_url: 'https://rocky-falls-15188.herokuapp.com/dashboard',
+    success_url: process.env.STRIPE_SUCCESS_URL,
+    cancel_url: process.env.STRIPE_CANCEL_URL,
     client_reference_id: user._id,
   });
 
